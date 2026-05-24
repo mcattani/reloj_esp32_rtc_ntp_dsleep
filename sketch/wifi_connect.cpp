@@ -5,7 +5,7 @@
 #include <WiFi.h>
 #include <ESPmDNS.h>
 
-void setup_wifi() {
+bool setup_wifi() {
   delay(10);
   Serial.println();
   Serial.print("Conectando a: ");
@@ -13,28 +13,30 @@ void setup_wifi() {
 
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-  // Bucle mientras se conecta
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(100);
+  // Intentar conectar durante un máximo de 20 intentos (aprox 10 seg)
+  int intentos = 0;
+  while (WiFi.status() != WL_CONNECTED && intentos < 20) {
+    delay(500);
     Serial.print(".");
+    intentos++;
   }
 
-  // Conexión exitosa -> mostramos los datos de conexión
-  Serial.println("");
-  Serial.println("WiFi Conectado!");
-  Serial.print("SSID: ");
-  Serial.println(WiFi.SSID());
-  Serial.print("IP asignada: ");
-  Serial.println(WiFi.localIP());
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\nWiFi Conectado!");
+    Serial.print("IP: ");
+    Serial.println(WiFi.localIP());
 
-  // mDNS
-  if (!MDNS.begin(MDNS_NAME)) {  // Seteamos el hostname
-    Serial.println("Error iniciando mDNS");
-    return;
+    // mDNS
+    if (!MDNS.begin(MDNS_NAME)) {
+      Serial.println("Error iniciando mDNS");
+    } else {
+      Serial.print("mDNS: http://");
+      Serial.print(MDNS_NAME);
+      Serial.println(".local");
+    }
+    return true; // Éxito
+  } else {
+    Serial.println("\nError: Tiempo de espera agotado.");
+    return false; // Fallo
   }
-
-  // Mostramos los datos de mDNS
-  Serial.print("mDNS iniciado: http://");
-  Serial.print(MDNS_NAME);
-  Serial.println(".local");
 }
