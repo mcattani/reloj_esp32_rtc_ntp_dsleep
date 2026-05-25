@@ -17,6 +17,7 @@ void setup() {
     // Fallo: Mostramos error en pantalla
     displayStatus("Error: No WiFi");
   }
+
 }
 
 void loop() {
