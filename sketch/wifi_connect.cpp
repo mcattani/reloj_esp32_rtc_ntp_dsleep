@@ -40,3 +40,9 @@ bool setup_wifi() {
     return false; // Fallo
   }
 }
+
+void disconnect_wifi() {
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
+  Serial.println("WiFi apagado para ahorro de energía.");
+}
