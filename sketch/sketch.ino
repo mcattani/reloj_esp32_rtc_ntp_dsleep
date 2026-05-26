@@ -29,6 +29,9 @@ void setup() {
     displayStatus("Error: No WiFi");
   }
 
+  // Una vez tenemos la hora, ya no necesitamos el WiFi
+  disconnect_wifi();
+  
   delay(2000);
 }
 
