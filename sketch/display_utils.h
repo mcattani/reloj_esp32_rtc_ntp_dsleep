@@ -15,13 +15,10 @@ void displayInit();
 void displayStatus(String message);
 
 /**
- * Muestra la hora actual formateada en la pantalla.
- * Utiliza un tamaño de fuente mayor para facilitar la lectura.
- * @param horas Hora (0-23).
- * @param minutos Minutos (0-59).
- * @param segundos Segundos (0-59).
+ * Muestra la hora actual a partir de una cadena ya formateada.
+ * @param timeStr Cadena con la hora (ej: "12:30:05").
  */
-void displayTime(int horas, int minutos, int segundos);
+void displayTime(String timeStr);
 
 /**
  * Muestra información de la red (SSID e IP).

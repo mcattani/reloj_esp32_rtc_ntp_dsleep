@@ -51,23 +51,11 @@ void displayStatus(String message) {
   display.display();
 }
 
-void displayTime(int horas, int minutos, int segundos) {
+void displayTime(String timeStr) {
   display.clearDisplay();
-  display.setTextSize(2); // Fuente grande (aprox 14px de alto)
-  display.setCursor(15, 25); // Centrado aproximado
-
-  // Formateo manual para añadir ceros a la izquierda (01:05:09)
-  if (horas < 10) display.print('0');
-  display.print(horas);
-  display.print(':');
-  
-  if (minutos < 10) display.print('0');
-  display.print(minutos);
-  display.print(':');
-  
-  if (segundos < 10) display.print('0');
-  display.print(segundos);
-  
+  display.setTextSize(2);
+  display.setCursor(15, 25);
+  display.print(timeStr);
   display.display();
 }
 
