@@ -3,49 +3,82 @@
 #include "display_utils.h"
 #include "time_manager.h"
 
+/*El compilador espera rigurosamente que su primer argumento sea un tipo de dato llamado gpio_num_t 
+(un enumerador interno que define los pines del chip válidos)*/
+const gpio_num_t PUSH_BUTTON = GPIO_NUM_27; 
+
+// Definimos las variables para el contador millis()
+unsigned long timeInit = 0;
+const unsigned long timePowerOn = 10000;  // Segundos que permanece encendido
+
 void setup() {
   Serial.begin(115200);
 
   // Inicializamos el display
   displayInit();
-  displayStatus("Conectando WiFi...");
 
-  // Intentamos conectar y guardamos el resultado
-  if (setup_wifi()) {
-    // Éxito: Mostramos la IP en pantalla
-    displayInfoNet(WiFi.SSID(), WiFi.localIP().toString());
-    delay(1000);
+  // Leemos la causa de despertar
+  esp_sleep_wakeup_cause_t sleep_cause = esp_sleep_get_wakeup_cause();
 
-    displayStatus("Sincronizando NTP");
-
-    // Sincronizamos el RTC a través del servidor NTP solo si hay WiFi
-    if (syncTimeWithNTP()) {
-      displayStatus("Sincronizado NTP");
-    } else {
-      displayStatus("Error NTP");
-    }
+  // Evaluamos escenario de inicio (reset o deep sleep)
+  if (sleep_cause == ESP_SLEEP_WAKEUP_EXT0) {
+    Serial.println("Despertado por botón. Leyendo RTC...");
+    // El RTC interno mantiene la hora gracias al módulo time_manager. No tocamos el WiFi.
   } else {
-    // Fallo de WiFi: Mostramos error en pantalla y seguimos con el RTC actual
-    displayStatus("Error: No WiFi");
+    Serial.println("Cold Boot / Reset manual. Iniciando sincronización...");
+    displayStatus("Conectando WiFi...");
+
+    // Intentamos conectar y guardamos el resultado
+    if (setup_wifi()) {
+      // Éxito: Mostramos la IP en pantalla
+      displayInfoNet(WiFi.SSID(), WiFi.localIP().toString());
+      delay(1000);
+
+      displayStatus("Sincronizando NTP");
+
+      // Sincronizamos el RTC a través del servidor NTP solo si hay WiFi
+      if (syncTimeWithNTP()) {
+        displayStatus("Sincronizado NTP");
+      } else {
+        displayStatus("Error NTP");
+      }
+
+    } else {
+      // Fallo de WiFi: Mostramos error en pantalla y seguimos con el RTC actual
+      displayStatus("Error: No WiFi");
+    }
+    // Una vez tenemos la hora, ya no necesitamos el WiFi
+    disconnect_wifi();
   }
 
-  // Una vez tenemos la hora, ya no necesitamos el WiFi
-  disconnect_wifi();
-  
-  delay(2000);
+  // Guardamos el momento en que termina el setup y arranca el loop (visualización)
+  timeInit = millis();
 }
 
 void loop() {
-  // Leemos el RTC
-  String horaActual = getFormattedTime();
+  // Mientras no hayan pasado timePowerOn (10 seg.), refrescamos el display
 
-  // Imprimimos en monitor Serie (depuración)
-  Serial.print("Hora RTC: ");
-  Serial.println(horaActual);
+  if (millis() - timeInit < timePowerOn) {
+    // Leemos el RTC
+    String horaActual = getFormattedTime();
+    // Imprimimos en monitor Serie (depuración)
+    Serial.print("Hora RTC: ");
+    Serial.println(horaActual);
 
-  // Mostramos en display
-  displayTime(horaActual);
+    // Mostramos en display
+    displayTime(horaActual);
 
-  // Actualizamos cada 1 seg
-  delay(1000);
+    // Actualizamos cada 1 seg
+    delay(1000);
+  } else {
+    // Se cumplió el tiempo
+    Serial.println("Tiempo cumplido. Apagando pantalla y entrando en modo Deep Sleep...");
+    // Apagamos el display
+    displayPowerOff();
+    // Configuramos el despertar por Ext0 en el GPIO definido cuando pase a estado HIGH (1)
+    esp_sleep_enable_ext0_wakeup(PUSH_BUTTON, 1);
+
+    // Acivamos el modo deep sleep
+    esp_deep_sleep_start();
+  }
 }
