@@ -1,20 +1,27 @@
 #include <ESP32Time.h>
 #include "time_manager.h"
 
-// Cremos un objeto del tipo ESP32Time
-ESP32Time rtc;
-
 // Configuramos servidos NTP
 const char* ntpServer = "1.ar.pool.ntp.org";
 const long gmtOffSet_sec = -10800;  // Valores para Argentina (UTC-3)
 const int daylightOffset_sec = 0;
 
-bool syncTimeWithNTP() {
-  // Configuramos el servidor y la zona horario en el core del ESP32
-  // Esto inicia la solicitud UDP en segundo plano
-  configTime(gmtOffSet_sec, daylightOffset_sec, ntpServer);
+// Cremos un objeto del tipo ESP32Time
+// Pasamos el offset en segundos directamente al constructor
+// De esta manera, cada vez que despierte de Deep Sleep, se inicializará con UTC-3
+ESP32Time rtc(gmtOffSet_sec);
 
-  Serial.println("[NTP] Intentando sincronizar hora...");
+bool syncTimeWithNTP() {
+  /* 
+   * IMPORTANTE: Configuramos configTime con offset 0 (UTC).
+   * Dejamos que el hardware del ESP32 mantenga la hora en UTC.
+   * El offset de la zona horaria (en nuestro caso -> Argentina -3) lo aplicará la librería ESP32Time
+   * a través de su constructor 'rtc(gmtOffSet_sec)'. Esto evita el "doble offset"
+   * al despertar de Deep Sleep.
+   */
+  configTime(0, daylightOffset_sec, ntpServer);
+
+  Serial.println("[NTP] Intentando sincronizar hora (UTC)...");
 
   /*Extraemos la información de nuestro RTC interno en una estructura tm, 
   colocamos un if en caso de que el proceso falle. 
@@ -26,19 +33,19 @@ bool syncTimeWithNTP() {
   const int timeoutMs = 8000;  // Definimos un tiempo máximo de espera de 8 segundos
   unsigned long startAttempt = millis();
 
-  // Bloqueamos el flujo tempralmente hasta que llegue la info del servidor
+  // Bloqueamos el flujo temporalmente hasta que llegue la info del servidor
   while (!getLocalTime(&timeinfo)) {
-    // Si superamos el tiempo de espera, salimos para no bloquear infinitamente
     if (millis() - startAttempt > timeoutMs) {
       Serial.println("[NTP] Error: Tiempo de espera agotado");
       return false;
     }
-    delay(500);
+    delay(100); // Reducimos a 100ms para capturar la respuesta más rápido
     Serial.print(".");
   }
 
   // Si el bucle terminó, significa que getLocalTime fue exitoso.
   // Ahora sí pasamos la estructura tm calibrada a la librería ESP32Time.
+  // Actualizamos el RTC inmediatamente para no perder milisegundos
   rtc.setTimeStruct(timeinfo);
   Serial.println("\n[NTP] Sincronización exitosa con el servidor NTP.");
   return true;
