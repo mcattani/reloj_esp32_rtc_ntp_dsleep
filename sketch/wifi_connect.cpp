@@ -11,6 +11,11 @@ bool setup_wifi() {
   Serial.print("Conectando a: ");
   Serial.println(WIFI_SSID);
 
+  // Limpiamos cualquier configuración previa para evitar conflictos (al despertar de Deep Sleep por ej.)
+  WiFi.disconnect(true);
+  delay(100); 
+  WiFi.mode(WIFI_STA); // Aseguramos modo estación explicitly
+
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   // Intentar conectar durante un máximo de 20 intentos (aprox 10 seg)
