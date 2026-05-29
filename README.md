@@ -6,6 +6,8 @@
 
 Este proyecto se propone implementar un reloj digital utilizando un ESP32, el RTC incluido en el mismo, sincronización por red (NTP) y un modo de bajo consumo (Deep Sleep).
 
+![Imagen proyecto](https://i.ibb.co/0ygCyb2S/20260527-175541.jpg)
+
 Puedes encontrar más información en mi blog: [**The Nerdy Apprentice**](https://thenerdyapprentice.blogspot.com/).
 
 ## Características
